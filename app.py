@@ -5,6 +5,7 @@ import streamlit as st
 import os
 import plotly.graph_objects as go
 import chardet
+import urllib.request
 
 # Définition des chemins locaux
 DATA_PATH = "data/"
@@ -20,11 +21,11 @@ def check_file_exists(file_path):
 @st.cache_data(ttl=600)
 def detect_encoding(file_path):
     if not check_file_exists(file_path):
-        return "utf-8"  # Encodage par défaut si le fichier est absent
+        return "utf-8"
     
     with open(file_path, "rb") as f:
-        result = chardet.detect(f.read(100000))  # Analyse un grand échantillon
-    return result.get("encoding", "utf-8")  # Définit UTF-8 par défaut en cas d'échec
+        result = chardet.detect(f.read(100000))
+    return result.get("encoding", "utf-8")
 
 # Chargement des données CSV avec gestion d'encodage
 @st.cache_data(ttl=600)
@@ -37,7 +38,7 @@ def load_csv_data(filename):
 
     try:
         encoding = detect_encoding(file_path)
-        df = pd.read_csv(file_path, encoding=encoding, on_bad_lines="skip")  # Correction ici
+        df = pd.read_csv(file_path, encoding=encoding, on_bad_lines="skip")
         return df
     except Exception as e:
         st.error(f"⚠️ Erreur lors du chargement {filename} : {str(e)}")
@@ -60,15 +61,12 @@ def load_model():
             st.error(f"⚠️ Erreur lors du chargement du modèle : {str(e)}")
     return None
 
-import urllib.request
-
-# URL du fichier CSV (remplace par ton lien réel)
-url = "https://mon-site.com/application_test.csv"
+# Téléchargement automatique du fichier CSV si nécessaire
+url = "https://media.githubusercontent.com/media/ElodieFr/Projet8/refs/heads/master/data/application_test.csv"
 destination = os.path.join("data", "application_test.csv")
 
-# Vérifier si le fichier existe, sinon le télécharger
 if not os.path.exists(destination):
-    os.makedirs("data", exist_ok=True)  # Crée le dossier 'data' s'il n'existe pas
+    os.makedirs("data", exist_ok=True)
     try:
         urllib.request.urlretrieve(url, destination)
         print("✅ Fichier téléchargé avec succès :", destination)
@@ -91,32 +89,35 @@ if model is None:
 if customer_data is None or model is None:
     st.stop()
 
-# 🔥 Encodage des variables catégoriques avant prédiction
-if customer_data is not None:
-    # Identifier les colonnes catégoriques
-    categorical_columns = customer_data.select_dtypes(include=['object']).columns.tolist()
-    
-    if categorical_columns:
-        customer_data = pd.get_dummies(customer_data, columns=categorical_columns)
-        st.write("✅ Encodage des variables catégoriques effectué :", categorical_columns)
+# Prétraitement des données avant la prédiction
+def preprocess_features(input_data):
+    df = pd.DataFrame([input_data])
 
-    # Assurer que les features correspondent à celles du modèle
-    if feature_names:  # Vérifier si feature_names est chargé
-        missing_cols = [col for col in feature_names if col not in customer_data.columns]
-        extra_cols = [col for col in customer_data.columns if col not in feature_names]
+    # Vérifier et encoder les variables catégorielles
+    for col in df.select_dtypes(include=['object']).columns:
+        df[col] = df[col].astype('category').cat.codes  # Convertir les catégories en nombres
 
-        # Ajouter les colonnes manquantes avec des valeurs nulles (0 par défaut)
-        for col in missing_cols:
-            customer_data[col] = 0
-
-        # Filtrer uniquement les colonnes attendues par le modèle
-        customer_data = customer_data[feature_names]
-
-        st.write(f"✅ Features alignées avec le modèle. Colonnes ajoutées: {missing_cols}, Colonnes supprimées: {extra_cols}")
+    return df
 
 # Fonction de prédiction sécurisée
 def make_prediction(input_data, model, threshold):
-    input_df = pd.DataFrame([input_data])
+    input_df = preprocess_features(input_data)
+
+    # Vérifier les colonnes attendues et les comparer avec celles en entrée
+    st.write("🚀 Colonnes attendues par le modèle:", feature_names)
+    st.write("🚀 Colonnes reçues après preprocessing:", input_df.columns.tolist())
+    st.write("🚀 Nombre de colonnes après preprocessing:", input_df.shape[1])
+
+    # Vérifier que toutes les colonnes du modèle sont présentes dans l'input
+    for col in feature_names:
+        if col not in input_df.columns:
+            input_df[col] = 0  # Ajouter la colonne manquante avec une valeur par défaut
+
+    # Réordonner les colonnes pour correspondre au modèle
+    input_df = input_df[feature_names]
+
+    st.write("✅ Nombre de colonnes après alignement:", input_df.shape[1])
+
     try:
         if hasattr(model, "predict_proba"):
             prob = model.predict_proba(input_df)[:, 1][0]
@@ -146,6 +147,7 @@ def main():
     st.title("📊 Credit Scoring Dashboard")
     st.header("🔍 Sélection du client")
 
+    # Vérifier si customer_data contient bien la colonne SK_ID_CURR
     if 'SK_ID_CURR' not in customer_data.columns:
         st.error("⚠️ Erreur : La colonne `SK_ID_CURR` est absente des données.")
         st.stop()
@@ -166,6 +168,13 @@ def main():
             st.success(f"**Résultat de la prédiction : {label}**")
     else:
         st.warning("⚠️ Client non trouvé. Veuillez entrer un ID valide.")
+
+    # Mode debug pour vérifier les fichiers
+    if st.checkbox("🔍 Mode Debug"):
+        st.write("Fichiers disponibles dans 'data/':", os.listdir(DATA_PATH) if check_file_exists(DATA_PATH) else "Dossier introuvable")
+        st.write("Fichiers disponibles dans 'models/':", os.listdir("models/") if check_file_exists("models/") else "Dossier introuvable")
+        st.write("Feature Names:", feature_names)
+        st.write("Aperçu des données clients:", customer_data.head() if customer_data is not None else "Données introuvables")
 
 if __name__ == "__main__":
     main()
