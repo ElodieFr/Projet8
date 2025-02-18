@@ -5,7 +5,6 @@ import streamlit as st
 import os
 import plotly.graph_objects as go
 import chardet
-import urllib.request
 
 # Définition des chemins locaux
 DATA_PATH = "data/"
@@ -38,7 +37,7 @@ def load_csv_data(filename):
 
     try:
         encoding = detect_encoding(file_path)
-        df = pd.read_csv(file_path, encoding=encoding, on_bad_lines="skip")  # Ignore les lignes corrompues
+        df = pd.read_csv(file_path, encoding=encoding, on_bad_lines="skip")  # Correction ici
         return df
     except Exception as e:
         st.error(f"⚠️ Erreur lors du chargement {filename} : {str(e)}")
@@ -60,13 +59,16 @@ def load_model():
         except Exception as e:
             st.error(f"⚠️ Erreur lors du chargement du modèle : {str(e)}")
     return None
+import urllib.request
+import os
 
-# Téléchargement automatique du fichier CSV si nécessaire
+# URL du fichier CSV (remplace par ton lien réel)
 url = "https://mon-site.com/application_test.csv"
 destination = os.path.join("data", "application_test.csv")
 
+# Vérifier si le fichier existe, sinon le télécharger
 if not os.path.exists(destination):
-    os.makedirs("data", exist_ok=True)
+    os.makedirs("data", exist_ok=True)  # Crée le dossier 'data' s'il n'existe pas
     try:
         urllib.request.urlretrieve(url, destination)
         print("✅ Fichier téléchargé avec succès :", destination)
@@ -89,22 +91,9 @@ if model is None:
 if customer_data is None or model is None:
     st.stop()
 
-# Prétraitement des données avant la prédiction
-def preprocess_features(input_data):
-    df = pd.DataFrame([input_data])
-
-    # Vérifier et encoder les variables catégorielles
-    for col in df.select_dtypes(include=['object']).columns:
-        df[col] = df[col].astype('category').cat.codes  # Convertir les catégories en nombres
-
-    return df
-
 # Fonction de prédiction sécurisée
 def make_prediction(input_data, model, threshold):
-    input_df = preprocess_features(input_data)  # Appliquer le preprocessing
-
-    st.write("🚀 Données après conversion :", input_df)  # Vérification des données traitées
-
+    input_df = pd.DataFrame([input_data])
     try:
         if hasattr(model, "predict_proba"):
             prob = model.predict_proba(input_df)[:, 1][0]
