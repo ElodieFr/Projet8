@@ -93,12 +93,26 @@ if customer_data is None or model is None:
 
 # 🔥 Encodage des variables catégoriques avant prédiction
 if customer_data is not None:
-    # Identifier les colonnes de type objet (catégoriques)
+    # Identifier les colonnes catégoriques
     categorical_columns = customer_data.select_dtypes(include=['object']).columns.tolist()
     
     if categorical_columns:
         customer_data = pd.get_dummies(customer_data, columns=categorical_columns)
         st.write("✅ Encodage des variables catégoriques effectué :", categorical_columns)
+
+    # Assurer que les features correspondent à celles du modèle
+    if feature_names:  # Vérifier si feature_names est chargé
+        missing_cols = [col for col in feature_names if col not in customer_data.columns]
+        extra_cols = [col for col in customer_data.columns if col not in feature_names]
+
+        # Ajouter les colonnes manquantes avec des valeurs nulles (0 par défaut)
+        for col in missing_cols:
+            customer_data[col] = 0
+
+        # Filtrer uniquement les colonnes attendues par le modèle
+        customer_data = customer_data[feature_names]
+
+        st.write(f"✅ Features alignées avec le modèle. Colonnes ajoutées: {missing_cols}, Colonnes supprimées: {extra_cols}")
 
 # Fonction de prédiction sécurisée
 def make_prediction(input_data, model, threshold):
@@ -132,7 +146,6 @@ def main():
     st.title("📊 Credit Scoring Dashboard")
     st.header("🔍 Sélection du client")
 
-    # Vérifier si customer_data contient bien la colonne SK_ID_CURR
     if 'SK_ID_CURR' not in customer_data.columns:
         st.error("⚠️ Erreur : La colonne `SK_ID_CURR` est absente des données.")
         st.stop()
@@ -153,13 +166,6 @@ def main():
             st.success(f"**Résultat de la prédiction : {label}**")
     else:
         st.warning("⚠️ Client non trouvé. Veuillez entrer un ID valide.")
-
-    # Mode debug pour vérifier les fichiers
-    if st.checkbox("🔍 Mode Debug"):
-        st.write("Fichiers disponibles dans 'data/':", os.listdir(DATA_PATH) if check_file_exists(DATA_PATH) else "Dossier introuvable")
-        st.write("Fichiers disponibles dans 'models/':", os.listdir("models/") if check_file_exists("models/") else "Dossier introuvable")
-        st.write("Feature Names:", feature_names)
-        st.write("Aperçu des données clients:", customer_data.head() if customer_data is not None else "Données introuvables")
 
 if __name__ == "__main__":
     main()
