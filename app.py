@@ -62,7 +62,7 @@ def load_model():
     return None
 
 # Téléchargement automatique du fichier CSV si nécessaire
-url = "https://media.githubusercontent.com/media/ElodieFr/Projet8/refs/heads/master/data/application_test.csv"
+url = "https://raw.githubusercontent.com//ElodieFr/Projet8/master/data/application_test.csv"
 destination = os.path.join("data", "application_test.csv")
 
 if not os.path.exists(destination):
