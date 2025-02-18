@@ -59,8 +59,8 @@ def load_model():
         except Exception as e:
             st.error(f"⚠️ Erreur lors du chargement du modèle : {str(e)}")
     return None
+
 import urllib.request
-import os
 
 # URL du fichier CSV (remplace par ton lien réel)
 url = "https://mon-site.com/application_test.csv"
@@ -90,6 +90,15 @@ if model is None:
     st.error("⚠️ Le modèle est introuvable ou corrompu.")
 if customer_data is None or model is None:
     st.stop()
+
+# 🔥 Encodage des variables catégoriques avant prédiction
+if customer_data is not None:
+    # Identifier les colonnes de type objet (catégoriques)
+    categorical_columns = customer_data.select_dtypes(include=['object']).columns.tolist()
+    
+    if categorical_columns:
+        customer_data = pd.get_dummies(customer_data, columns=categorical_columns)
+        st.write("✅ Encodage des variables catégoriques effectué :", categorical_columns)
 
 # Fonction de prédiction sécurisée
 def make_prediction(input_data, model, threshold):
