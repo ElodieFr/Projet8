@@ -59,6 +59,21 @@ def load_model():
         except Exception as e:
             st.error(f"⚠️ Erreur lors du chargement du modèle : {str(e)}")
     return None
+import urllib.request
+import os
+
+# URL du fichier CSV (remplace par ton lien réel)
+url = "https://mon-site.com/application_test.csv"
+destination = os.path.join("data", "application_test.csv")
+
+# Vérifier si le fichier existe, sinon le télécharger
+if not os.path.exists(destination):
+    os.makedirs("data", exist_ok=True)  # Crée le dossier 'data' s'il n'existe pas
+    try:
+        urllib.request.urlretrieve(url, destination)
+        print("✅ Fichier téléchargé avec succès :", destination)
+    except Exception as e:
+        print(f"⚠️ Erreur lors du téléchargement du fichier : {str(e)}")
 
 # Chargement des ressources
 model = load_model()
