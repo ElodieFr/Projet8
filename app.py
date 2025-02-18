@@ -9,34 +9,26 @@ import plotly.graph_objects as go
 # Définition des chemins locaux
 DATA_PATH = "data/"
 MODEL_PATH = "models/model"
+OPTIMAL_THRESHOLD = 0.636364
 
-# Fonction pour vérifier si un fichier existe
+# Vérification de l'existence des fichiers
+@st.cache_data()
 def check_file_exists(file_path):
-    if not os.path.exists(file_path):
-        st.error(f"⚠️ Fichier introuvable : {file_path}")
-        return False
-    return True
+    return os.path.exists(file_path)
 
-# Chargement des données avec gestion des erreurs
-@st.cache_data()
-def load_test_data():
-    """Charge les données de test en local"""
-    file_path = os.path.join(DATA_PATH, "application_test.csv")
+# Chargement des données avec gestion d'erreurs
+@st.cache_data(ttl=600)
+def load_csv_data(filename):
+    file_path = os.path.join(DATA_PATH, filename)
     if check_file_exists(file_path):
-        return pd.read_csv(file_path)
+        try:
+            return pd.read_csv(file_path)
+        except Exception as e:
+            st.error(f"⚠️ Erreur lors du chargement {filename} : {str(e)}")
     return None
 
-@st.cache_data()
-def load_test_data_description():
-    """Charge la description des données en local"""
-    file_path = os.path.join(DATA_PATH, "HomeCredit_columns_description.csv")
-    if check_file_exists(file_path):
-        return pd.read_csv(file_path)
-    return None
-
-@st.cache_data()
-def retrieve_feature_names():
-    """Charge les noms des features en local"""
+@st.cache_data(ttl=600)
+def load_feature_names():
     file_path = os.path.join(DATA_PATH, "feature_names.txt")
     if check_file_exists(file_path):
         with open(file_path, "r") as f:
@@ -45,42 +37,38 @@ def retrieve_feature_names():
 
 @st.cache_resource()
 def load_model():
-    """Charge le modèle MLflow en local"""
     if check_file_exists(MODEL_PATH):
         try:
             return mlflow.sklearn.load_model(MODEL_PATH)
         except Exception as e:
             st.error(f"⚠️ Erreur lors du chargement du modèle : {str(e)}")
-            return None
     return None
 
-# Chargement des données et du modèle
+# Chargement des ressources
 model = load_model()
-feature_names = retrieve_feature_names()
-customer_data = load_test_data()
-customer_data_description = load_test_data_description()
-optimal_threshold = 0.636364
+feature_names = load_feature_names()
+customer_data = load_csv_data("application_test.csv")
+customer_data_description = load_csv_data("HomeCredit_columns_description.csv")
 
-# Vérifier si les fichiers sont bien chargés avant de continuer
 if customer_data is None or model is None:
     st.error("⚠️ Impossible de charger les données ou le modèle. Vérifiez que tous les fichiers sont disponibles.")
-    st.stop()  # Arrête l'exécution de Streamlit
+    st.stop()
 
-# Fonction de prédiction
-def make_prediction(input_data, model, optimal_threshold):
-    """Effectue une prédiction et renvoie la probabilité et l'étiquette"""
+# Fonction de prédiction sécurisée
+def make_prediction(input_data, model, threshold):
     input_df = pd.DataFrame([input_data])
-
     try:
-        probability_class1 = model.predict_proba(input_df)[:, 1][0]
-        prediction_label = "Refusé" if probability_class1 >= optimal_threshold else "Accepté"
-        return probability_class1, prediction_label
+        if hasattr(model, "predict_proba"):
+            prob = model.predict_proba(input_df)[:, 1][0]
+            return prob, "Refusé" if prob >= threshold else "Accepté"
+        else:
+            st.error("⚠️ Le modèle ne supporte pas `predict_proba`")
     except Exception as e:
         st.error(f"⚠️ Erreur lors de la prédiction : {str(e)}")
-        return None, None
+    return None, None
 
-# Fonction pour afficher une jauge avec Plotly
-def gauge_chart(value, threshold=0.636364):
+# Affichage d'une jauge avec Plotly
+def gauge_chart(value, threshold):
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=value,
@@ -93,31 +81,32 @@ def gauge_chart(value, threshold=0.636364):
     ))
     st.plotly_chart(fig)
 
-# Interface Streamlit
+# Interface principale
 def main():
     st.title("📊 Credit Scoring Dashboard")
-
     st.header("🔍 Sélection du client")
-    sk_id_curr = st.number_input("Entrez un SK_ID_CURR:", 
-                                 min_value=int(customer_data['SK_ID_CURR'].min()), 
+    sk_id_curr = st.number_input("Entrez un SK_ID_CURR:",
+                                 min_value=int(customer_data['SK_ID_CURR'].min()),
                                  max_value=int(customer_data['SK_ID_CURR'].max()))
-
     if sk_id_curr in customer_data['SK_ID_CURR'].values:
         client_data = customer_data[customer_data['SK_ID_CURR'] == sk_id_curr].iloc[0].to_dict()
-        st.write(f"📋 **Informations du client :**")
+        st.write("📋 **Informations du client :**")
         st.json(client_data)
-
+        
         # Prédiction
-        prob, label = make_prediction(client_data, model, optimal_threshold)
-
+        prob, label = make_prediction(client_data, model, OPTIMAL_THRESHOLD)
         if prob is not None:
-            gauge_chart(prob, optimal_threshold)
+            gauge_chart(prob, OPTIMAL_THRESHOLD)
             st.success(f"**Résultat de la prédiction : {label}**")
-        else:
-            st.error("⚠️ Une erreur s'est produite lors de la prédiction.")
-
     else:
         st.warning("⚠️ Client non trouvé. Veuillez entrer un ID valide.")
+
+    # Mode debug pour vérifier les fichiers
+    if st.checkbox("🔍 Mode Debug"):
+        st.write("Fichiers disponibles dans 'data/':", os.listdir(DATA_PATH))
+        st.write("Fichiers disponibles dans 'models/':", os.listdir("models/"))
+        st.write("Feature Names:", feature_names)
+        st.write("Aperçu des données clients:", customer_data.head())
 
 if __name__ == "__main__":
     main()
