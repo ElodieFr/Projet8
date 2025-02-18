@@ -19,21 +19,29 @@ def check_file_exists(file_path):
 # Détection automatique de l'encodage
 @st.cache_data(ttl=600)
 def detect_encoding(file_path):
+    if not check_file_exists(file_path):
+        return "utf-8"  # Encodage par défaut si le fichier est absent
+    
     with open(file_path, "rb") as f:
-        result = chardet.detect(f.read(10000))
-    return result['encoding']
+        result = chardet.detect(f.read(100000))  # Analyse un grand échantillon
+    return result.get("encoding", "utf-8")  # Définit UTF-8 par défaut en cas d'échec
 
 # Chargement des données CSV avec gestion d'encodage
 @st.cache_data(ttl=600)
 def load_csv_data(filename):
     file_path = os.path.join(DATA_PATH, filename)
-    if check_file_exists(file_path):
-        try:
-            encoding = detect_encoding(file_path)  # Détection automatique de l'encodage
-            return pd.read_csv(file_path, encoding=encoding, errors="replace")
-        except Exception as e:
-            st.error(f"⚠️ Erreur lors du chargement {filename} : {str(e)}")
-    return None
+    
+    if not check_file_exists(file_path):
+        st.error(f"❌ Fichier introuvable : {filename}")
+        return None
+
+    try:
+        encoding = detect_encoding(file_path)
+        df = pd.read_csv(file_path, encoding=encoding, on_bad_lines="skip")  # Correction ici
+        return df
+    except Exception as e:
+        st.error(f"⚠️ Erreur lors du chargement {filename} : {str(e)}")
+        return None
 
 @st.cache_data(ttl=600)
 def load_feature_names():
@@ -58,8 +66,14 @@ feature_names = load_feature_names()
 customer_data = load_csv_data("application_test.csv")
 customer_data_description = load_csv_data("HomeCredit_columns_description.csv")
 
+# Vérifier si les fichiers essentiels sont bien chargés
+if customer_data is None:
+    st.error("⚠️ Le fichier `application_test.csv` est introuvable ou corrompu.")
+if customer_data_description is None:
+    st.error("⚠️ Le fichier `HomeCredit_columns_description.csv` est introuvable ou corrompu.")
+if model is None:
+    st.error("⚠️ Le modèle est introuvable ou corrompu.")
 if customer_data is None or model is None:
-    st.error("⚠️ Impossible de charger les données ou le modèle. Vérifiez que tous les fichiers sont disponibles.")
     st.stop()
 
 # Fonction de prédiction sécurisée
@@ -73,7 +87,7 @@ def make_prediction(input_data, model, threshold):
             st.error("⚠️ Le modèle ne supporte pas `predict_proba`")
     except Exception as e:
         st.error(f"⚠️ Erreur lors de la prédiction : {str(e)}")
-    return None, None
+        return None, None
 
 # Affichage d'une jauge avec Plotly
 def gauge_chart(value, threshold):
@@ -118,10 +132,10 @@ def main():
 
     # Mode debug pour vérifier les fichiers
     if st.checkbox("🔍 Mode Debug"):
-        st.write("Fichiers disponibles dans 'data/':", os.listdir(DATA_PATH))
-        st.write("Fichiers disponibles dans 'models/':", os.listdir("models/"))
+        st.write("Fichiers disponibles dans 'data/':", os.listdir(DATA_PATH) if check_file_exists(DATA_PATH) else "Dossier introuvable")
+        st.write("Fichiers disponibles dans 'models/':", os.listdir("models/") if check_file_exists("models/") else "Dossier introuvable")
         st.write("Feature Names:", feature_names)
-        st.write("Aperçu des données clients:", customer_data.head())
+        st.write("Aperçu des données clients:", customer_data.head() if customer_data is not None else "Données introuvables")
 
 if __name__ == "__main__":
     main()
