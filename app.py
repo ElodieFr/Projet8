@@ -1,10 +1,10 @@
-"" 
 import mlflow
 import mlflow.pyfunc
 import pandas as pd
 import streamlit as st
 import os
 import plotly.graph_objects as go
+import chardet
 
 # Définition des chemins locaux
 DATA_PATH = "data/"
@@ -16,13 +16,21 @@ OPTIMAL_THRESHOLD = 0.636364
 def check_file_exists(file_path):
     return os.path.exists(file_path)
 
-# Chargement des données avec gestion d'erreurs
+# Détection automatique de l'encodage
+@st.cache_data(ttl=600)
+def detect_encoding(file_path):
+    with open(file_path, "rb") as f:
+        result = chardet.detect(f.read(10000))
+    return result['encoding']
+
+# Chargement des données CSV avec gestion d'encodage
 @st.cache_data(ttl=600)
 def load_csv_data(filename):
     file_path = os.path.join(DATA_PATH, filename)
     if check_file_exists(file_path):
         try:
-            return pd.read_csv(file_path)
+            encoding = detect_encoding(file_path)  # Détection automatique de l'encodage
+            return pd.read_csv(file_path, encoding=encoding, errors="replace")
         except Exception as e:
             st.error(f"⚠️ Erreur lors du chargement {filename} : {str(e)}")
     return None
@@ -31,7 +39,7 @@ def load_csv_data(filename):
 def load_feature_names():
     file_path = os.path.join(DATA_PATH, "feature_names.txt")
     if check_file_exists(file_path):
-        with open(file_path, "r") as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             return f.read().splitlines()
     return []
 
@@ -77,7 +85,7 @@ def gauge_chart(value, threshold):
                'bar': {'color': "red" if value >= threshold else "green"},
                'steps': [
                    {'range': [0, threshold], 'color': "green"},
-                   {'range': [threshold, 1], 'color': "red"}]}
+                   {'range': [threshold, 1], 'color': "red"}] }
     ))
     st.plotly_chart(fig)
 
@@ -85,9 +93,16 @@ def gauge_chart(value, threshold):
 def main():
     st.title("📊 Credit Scoring Dashboard")
     st.header("🔍 Sélection du client")
+
+    # Vérifier si customer_data contient bien la colonne SK_ID_CURR
+    if 'SK_ID_CURR' not in customer_data.columns:
+        st.error("⚠️ Erreur : La colonne `SK_ID_CURR` est absente des données.")
+        st.stop()
+
     sk_id_curr = st.number_input("Entrez un SK_ID_CURR:",
                                  min_value=int(customer_data['SK_ID_CURR'].min()),
                                  max_value=int(customer_data['SK_ID_CURR'].max()))
+
     if sk_id_curr in customer_data['SK_ID_CURR'].values:
         client_data = customer_data[customer_data['SK_ID_CURR'] == sk_id_curr].iloc[0].to_dict()
         st.write("📋 **Informations du client :**")
