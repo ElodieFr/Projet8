@@ -1,11 +1,13 @@
-**Objectives:**
+__Objectives:__
+---
 
 Deliver an oral presentation of a modeling approach to an internal or external client.
 Conduct a technology watch on tools and trends in data science and AI (either in NLP or Computer Vision).
 Create a dashboard to present the modeling work to an audience.
 Write a methodological note to communicate the modeling approach.
 
-**Context:**
+__Context:__
+---
 
 **Context 1: DASHBOARD**
 Prêt à dépenser, a financial company specializing in consumer credit for underbanked or unbanked individuals, is facing a major transparency challenge with its clients. Although the credit scoring tool in place is effective for assessing borrowers’ creditworthiness, its decision-making process lacks clarity. Faced with increasing demands for explanations from clients, Prêt à dépenser aims to develop an interactive dashboard for client advisors. This tool will help visualize and clearly explain the factors that influenced the granting or rejection of a loan, thus fostering better understanding and acceptance of decisions by clients. This initiative aligns with the company's values of transparency and closeness with its customer base.
