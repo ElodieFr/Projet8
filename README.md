@@ -27,6 +27,7 @@ __Missions:__
 - Compare the client’s information with that of other clients using accessible charts.
 - Comply with WCAG accessibility standards for people with disabilities.
 - Deploy the dashboard on a Cloud platform for multi-user access.
+
 Optional Features:
 
 - Allow score and probability recalculation by modifying the client’s information.
