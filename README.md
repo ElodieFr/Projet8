@@ -18,9 +18,9 @@ Prêt à dépenser, a financial company specializing in consumer credit for unde
 In its ongoing effort to stay at the forefront of innovation in data science, Place de Marché, recognized for its expertise in Natural Language Processing (NLP) and image analysis, wants to explore new modeling techniques in these areas. The goal is to conduct a comprehensive comparative study between a recent approach and a traditional method already used within the company. This analysis will evaluate the performance of both techniques, identifying their strengths and weaknesses. The expected benefits are numerous: improved model accuracy, reduced processing time, optimized resources, etc. By proactively exploring new technologies, Place de Marché aims to maintain its technological edge and continue offering increasingly efficient and innovative data science solutions.
 
 __Missions:__
+---
 
 **Mission 1: DASHBOARD**
----
 
 Visualize the credit score, its probability, and interpretation in a clear and accessible way.
 Display key descriptive information about the client.
