@@ -22,20 +22,20 @@ __Missions:__
 
 **Mission 1: DASHBOARD**
 
-Visualize the credit score, its probability, and interpretation in a clear and accessible way.
-Display key descriptive information about the client.
-Compare the client’s information with that of other clients using accessible charts.
-Comply with WCAG accessibility standards for people with disabilities.
-Deploy the dashboard on a Cloud platform for multi-user access.
-Optional Features:
+- Visualize the credit score, its probability, and interpretation in a clear and accessible way.
+- Display key descriptive information about the client.
+- Compare the client’s information with that of other clients using accessible charts.
+- Comply with WCAG accessibility standards for people with disabilities.
+- Deploy the dashboard on a Cloud platform for multi-user access.
+- Optional Features:
 
-Allow score and probability recalculation by modifying the client’s information.
-Integrate a system for entering new client applications.
+- Allow score and probability recalculation by modifying the client’s information.
+- Integrate a system for entering new client applications.
 
 **Mission 2: STATE OF THE ART**
 
-Identify a recent data modeling technique for text or image data (less than 5 years old) published in a reputable scientific article.
-Present the technique using well-known platforms (Arxiv, fast.ai, Machine Learning Mastery, KDNuggets, Import AI, MIT Tech Review, MIT News ML) or high-quality newsletters (Data Elixir, Data Science Weekly).
-Develop and present a proof of concept applying the selected technique to existing text or image data.
-Write a methodological note explaining the key concepts and techniques.
-Deliver an oral presentation of the approach and results.
+- Identify a recent data modeling technique for text or image data (less than 5 years old) published in a reputable scientific article.
+- Present the technique using well-known platforms (Arxiv, fast.ai, Machine Learning Mastery, KDNuggets, Import AI, MIT Tech Review, MIT News ML) or high-quality newsletters (Data Elixir, Data Science Weekly).
+- Develop and present a proof of concept applying the selected technique to existing text or image data.
+- Write a methodological note explaining the key concepts and techniques.
+- Deliver an oral presentation of the approach and results.
